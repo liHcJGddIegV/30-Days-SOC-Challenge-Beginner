@@ -70,10 +70,12 @@ Attackers request Kerberos service tickets for accounts with Service Principal N
 **Splunk Query:**
 ```spl
 index=windows EventCode=4769 Ticket_Encryption_Type=0x17
-| where Service_Name!="krbtgt" AND Service_Name!="*$"
+| where Service_Name!="krbtgt" AND NOT like(Service_Name, "%$")
 | stats count by Account_Name, Service_Name, src_ip
 | where count > 10
 ```
+
+> **Note:** In Splunk, `where` does **not** treat `*` as a wildcard. Use `like(field, "%pattern%")` (or `match(field, "regex")`) for pattern filtering inside `where`.
 
 ---
 
@@ -202,7 +204,7 @@ Attackers with replication permissions use legitimate AD replication protocols t
 ```spl
 index=windows EventCode=4662
 (Properties="*1131f6aa-9c07-11d1-f79f-00c04fc2dcd2*" OR Properties="*1131f6ad-9c07-11d1-f79f-00c04fc2dcd2*")
-| where Account_Name!="*DC*" AND Account_Name!="*$"
+| where NOT like(Account_Name, "%DC%") AND NOT like(Account_Name, "%$")
 | table _time, Account_Name, src_ip, Object_DN
 ```
 
@@ -322,7 +324,7 @@ Get-ADDomainController -Filter * | Select-Object Name, IPv4Address
 ```spl
 index=windows EventCode=4662
 (Properties="*1131f6aa-9c07-11d1-f79f-00c04fc2dcd2*" OR Properties="*1131f6ad-9c07-11d1-f79f-00c04fc2dcd2*" OR Properties="*89e95b76-444d-4c62-991a-0facbeda640c*")
-| where NOT (Account_Name="*DC*" OR Account_Name="*$")
+| where NOT (like(Account_Name, "%DC%") OR like(Account_Name, "%$"))
 | table _time, Account_Name, src_ip, Object_DN, Properties
 | sort -_time
 ```
